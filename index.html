@@ -90,6 +90,23 @@
       color: #007700;
       text-align: center;
     }
+    /* London Bus Map styling */
+    #busMapSection {
+      margin-top: 40px;
+      text-align: center;
+    }
+    #busMapSection img {
+      width: 100%;
+      max-width: 800px;
+      height: auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #busMapSection p {
+      font-size: 0.9em;
+      color: #555;
+    }
     /* Optional debug info styling - hidden by default */
     .debug-info {
       margin-top: 20px;
@@ -117,6 +134,16 @@
 
     <div id="content">
       <p class="loading">Loading bus arrival data...</p>
+    </div>
+    
+    <!-- London Bus Map Section -->
+    <h2>London Bus Map for Reference</h2>
+    <div id="busMapSection">
+      <!-- Clicking this image opens the full-size map -->
+      <a href="https://www.youinlondon.com/wp-content/uploads/2015/09/key-bus-routes-in-central-london-e1443534733642.jpg" target="_blank">
+        <img src="https://www.youinlondon.com/wp-content/uploads/2015/09/key-bus-routes-in-central-london-e1443534733642.jpg" alt="London Bus Map">
+      </a>
+      <p>Click the map to view full size.</p>
     </div>
 
     <!-- Feedback Form Section -->
@@ -232,7 +259,7 @@
         document.getElementById('feedbackMessage').textContent = 'Please enter your feedback before submitting.';
         return;
       }
-      // Log the feedback to the console (for real application, send to a server)
+      // Log the feedback to the console (for a real application, send to a server)
       console.log('Feedback received:', feedbackValue);
       document.getElementById('feedbackMessage').textContent = 'Thank you for your feedback!';
       // Optionally, clear the feedback field after submission
