@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Bus Schedule - Piccadilly Circus (Stop E)</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+      color: #333;
+    }
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #444;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    .current-time {
+      text-align: center;
+      font-size: 1.2em;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+    tr:nth-child(even) {
+      background-color: #fafafa;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    .loading, .error {
+      text-align: center;
+      font-size: 1.2em;
+      margin-top: 20px;
+    }
+    /* Feedback form styling */
+    form {
+      margin-top: 30px;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+    }
+    form label {
+      font-weight: bold;
+    }
+    form textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    form button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background-color: #74ebd5;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    form button:hover {
+      background-color: #68d1c0;
+    }
+    .feedback-message {
+      margin-top: 10px;
+      font-style: italic;
+      color: #007700;
+      text-align: center;
+    }
+    /* Optional debug info styling - hidden by default */
+    .debug-info {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #e8f0fe;
+      border: 1px solid #c5d1ea;
+      border-radius: 5px;
+      font-size: 0.9em;
+      color: #333;
+      display: none;
+    }
+    .debug-info h2 {
+      margin-top: 0;
+      font-size: 1.1em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Live Bus Schedule - Piccadilly Circus (Stop E)</h1>
+    <!-- Present Time Section -->
+    <div class="current-time">
+      Present Time: <span id="currentTime"></span>
+    </div>
+
+    <div id="content">
+      <p class="loading">Loading bus arrival data...</p>
+    </div>
+
+    <!-- Feedback Form Section -->
+    <h2>User Feedback</h2>
+    <form id="feedbackForm">
+      <label for="feedbackInput">Your feedback:</label><br>
+      <textarea id="feedbackInput" name="feedback" rows="4" placeholder="Enter your feedback here..."></textarea><br>
+      <button type="submit">Submit Feedback</button>
+    </form>
+    <p id="feedbackMessage" class="feedback-message"></p>
+
+    <!-- Debug Information Section (Optional: uncomment CSS within .debug-info to show on page) -->
+    <div class="debug-info" id="debugInfo">
+      <h2>Debug Information</h2>
+      <div id="debugContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // Bus stop ID for Piccadilly Circus (Stop E)
+    const busStopId = '490011515W';
+    const apiUrl = 'https://api.tfl.gov.uk/StopPoint/' + busStopId + '/Arrivals';
+    const debugInfoDiv = document.getElementById('debugInfo');
+    const debugContentDiv = document.getElementById('debugContent');
+
+    // Function to log debug information to the console.
+    // To display on the page, uncomment the inner lines.
+    function logDebug(message) {
+      console.log('DEBUG:', message);
+      // Uncomment below to display debug information on the page:
+      // debugContentDiv.innerHTML += '<p>' + new Date().toLocaleTimeString() + ' - ' + message + '</p>';
+      // debugInfoDiv.style.display = 'block';
+    }
+
+    // Function to fetch bus arrival data from the TfL API
+    function fetchBusData() {
+      logDebug('Starting fetch from TfL API...');
+      fetch(apiUrl)
+        .then(response => {
+          logDebug('Received response: ' + response.status);
+          if (!response.ok) {
+            throw new Error('Network response was not ok: ' + response.statusText);
+          }
+          return response.json();
+        })
+        .then(data => {
+          logDebug('Data received: ' + JSON.stringify(data));
+          // Sort the data by time until arrival (in seconds)
+          data.sort((a, b) => a.timeToStation - b.timeToStation);
+          updateTable(data);
+        })
+        .catch(error => {
+          console.error('Error fetching TfL bus data:', error);
+          document.getElementById('content').innerHTML = '<p class="error">Error loading bus arrival data.</p>';
+          logDebug('Error: ' + error.message);
+        });
+    }
+
+    // Function to update the content div with an HTML table displaying bus data
+    function updateTable(data) {
+      const contentDiv = document.getElementById('content');
+      if (!data || data.length === 0) {
+        contentDiv.innerHTML = '<p class="error">No bus predictions available.</p>';
+        return;
+      }
+
+      let html = '<table>';
+      html += '<thead><tr>';
+      html += '<th>Bus Line</th>';
+      html += '<th>Destination</th>';
+      html += '<th>Arrival In (minutes)</th>';
+      html += '<th>Expected Arrival Time</th>';
+      html += '</tr></thead>';
+      html += '<tbody>';
+
+      data.forEach(bus => {
+        const arrivalMinutes = Math.floor(bus.timeToStation / 60);
+        const expectedTime = new Date(bus.expectedArrival).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        html += '<tr>';
+        html += '<td>' + bus.lineName + '</td>';
+        html += '<td>' + bus.destinationName + '</td>';
+        html += '<td>' + arrivalMinutes + '</td>';
+        html += '<td>' + expectedTime + '</td>';
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+      contentDiv.innerHTML = html;
+      logDebug('Table updated successfully.');
+    }
+
+    // Function to update the current time every second
+    function updateCurrentTime() {
+      const now = new Date();
+      // Format the time including hours, minutes, and seconds
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      document.getElementById('currentTime').textContent = timeString;
+    }
+
+    // Initial fetch for bus data; refresh every 60 seconds
+    fetchBusData();
+    setInterval(fetchBusData, 60000);
+
+    // Update the present time every second
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 1000);
+
+    // Feedback form submission handling
+    document.getElementById('feedbackForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+      const feedbackValue = document.getElementById('feedbackInput').value.trim();
+      if (feedbackValue === '') {
+        document.getElementById('feedbackMessage').textContent = 'Please enter your feedback before submitting.';
+        return;
+      }
+      // Log the feedback to the console (for real application, send to a server)
+      console.log('Feedback received:', feedbackValue);
+      document.getElementById('feedbackMessage').textContent = 'Thank you for your feedback!';
+      // Optionally, clear the feedback field after submission
+      document.getElementById('feedbackInput').value = '';
+    });
+  </script>
+</body>
+</html>
